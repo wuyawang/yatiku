@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>千课知识库查询界面</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e3e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            padding: 30px;
+            margin: 20px;
+        }
+
+        /* 头部样式 */
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #5a6c7d;
+            line-height: 1.5;
+        }
+
+        /* 配置向导样式 */
+        .config-wizard {
+            background: #f0f9ff;
+            border: 2px solid #c5e1ff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+            display: none; /* 默认隐藏，通过JS控制显示 */
+        }
+
+        .config-wizard.visible {
+            display: block;
+        }
+
+        .wizard-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1a5fb4;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wizard-steps {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        .wizard-step {
+            margin-bottom: 12px;
+            padding-left: 5px;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #1a5fb4;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .step-description {
+            display: inline-block;
+            vertical-align: top;
+            width: calc(100% - 40px);
+        }
+
+        .code-snippet {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            margin: 15px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .help-link {
+            color: #1a5fb4;
+            text-decoration: none;
+            border-bottom: 1px dotted #1a5fb4;
+            margin-left: 8px;
+            font-size: 0.9rem;
+        }
+
+        .help-link:hover {
+            color: #0d4a9c;
+            border-bottom-style: solid;
+        }
+
+        /* 查询界面样式 */
+        .query-interface {
+            display: none; /* 默认隐藏，通过JS控制显示 */
+        }
+
+        .query-interface.visible {
+            display: block;
+        }
+
+        .query-section {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 加载动画 */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 结果区域 */
+        .result-section {
+            margin-top: 25px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s, transform 0.4s;
+        }
+
+        .result-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-content {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 18px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            border: 1px solid #e2e8f0;
+        }
+
+        .result-content.error {
+            background: #fff5f5;
+            border-color: #fed7d7;
+            color: #c53030;
+        }
+
+        /* 状态指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 12px;
+        }
+
+        .status-indicator.config-needed {
+            background: #fff8e1;
+            color: #8a6500;
+            border: 1px solid #f6c052;
+        }
+
+        .status-indicator.ready {
+            background: #f0fff4;
+            color: #276749;
+            border: 1px solid #9ae6b4;
+        }
+
+        /* 页脚 */
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #718096;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .config-wizard {
+                padding: 18px;
+            }
+            
+            button {
+                padding: 12px 28px;
+                font-size: 1rem;
+            }
+            
+            .code-snippet {
+                font-size: 0.8rem;
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .wizard-steps {
+                margin-left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="https://s.coze.cn/image/PsG-2jjEOd4/" alt="千课知识库" style="width:75px; height:auto; vertical-align:middle;"> 千课知识库查询</h1>
+            <p class="subtitle">向共享知识库提问，获取AI驱动的即时答案</p>
+        </header>
+
+        <!-- 配置向导面板（仅当WORKER_URL未配置时显示） -->
+        <div class="config-wizard" id="configWizard">
+            <div class="wizard-title">
+                <span>⚙️ 需要完成配置</span>
+                <span class="status-indicator config-needed">待配置</span>
+            </div>
+            
+            <p style="margin-bottom: 16px; color: #4a5568;">检测到尚未配置Cloudflare Worker URL，请按以下步骤完成设置：</p>
+            
+            <div class="wizard-steps">
+                <div class="wizard-step">
+                    <span class="step-number">1</span>
+                    <div class="step-description">
+                        <strong>部署Cloudflare Worker</strong>
+                        <p>登录Cloudflare，创建Worker并粘贴提供的代理代码。</p>
+                        <a href="#cf-help" class="help-link" onclick="showHelp('cf')">如何操作？</a>
+                    </div>
+                </div>
+                
+                <div class="wizard-step">
+                    <span class="step-number">2</span>
+                    <div class="step-description">
+                        <strong>获取Worker端点URL</strong>
+                        <p>Worker部署成功后，获取类似下面的URL：</p>
+                        <div class="code-snippet">https://你的worker名称.你的用户名.workers.dev/query</div>
+                    </div>
+                </div>
+                
+                <div class="wizard-step">
+                    <span class="step-number">3</span>
+                    <div class="step-description">
+                        <strong>更新前端配置</strong>
+                        <p>用你获取的真实URL替换下面的占位符：</p>
+                        <div class="code-snippet">// 请用你的真实Worker URL替换这一行
+const WORKER_URL = 'https://your-worker.your-username.workers.dev/query';</div>
+                        <p>替换后刷新页面，配置向导将自动消失。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #c5e1ff;">
+                <p style="color: #4a5568; font-size: 0.9rem;">
+                    <strong>需要详细帮助？</strong> 请查阅
+                    <a href="#deployment-guide" class="help-link" onclick="showHelp('full')">完整部署指南</a>
+                    或
+                    <a href="#test-worker" class="help-link" onclick="testWorkerConnection()">测试当前Worker连接</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- 查询界面（仅当WORKER_URL已配置时显示） -->
+        <div class="query-interface" id="queryInterface">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="font-size: 1.5rem; color: #2c3e50; margin: 0;">知识库查询</h2>
+                        <span class="status-indicator ready" id="statusIndicator">已就绪</span>
+                    </div>
+                    <p style="color: #5a6c7d; font-size: 0.95rem; margin-top: 4px;">
+                        输入问题，获取基于千课知识库的答案
+                        <a href="#how-it-works" class="help-link" onclick="showHelp('query')">如何使用？</a>
+                    </p>
+                </div>
+                <button onclick="showConfigWizard()" style="background: #718096; padding: 8px 16px; font-size: 0.9rem;">
+                    ⚙️ 修改配置
+                </button>
+            </div>
+            
+            <div class="query-section">
+                <label for="question">请输入问题：</label>
+                <textarea id="question" placeholder="例如：知识库主要包含哪些内容？新成员加入的流程是什么？"></textarea>
+                
+                <div class="button-group">
+                    <button id="submitBtn">
+                        <span id="btnText">提问</span>
+                        <span id="spinner" class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-title">
+                    <span>📄 答案：</span>
+                </div>
+                <div class="result-content" id="answerContent">
+                    <!-- 答案将显示在这里 -->
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>基于千课知识库 & Cloudflare Workers 构建 • 仅供个人使用</p>
+            <p style="margin-top: 6px; font-size: 0.8rem;">版本 v2.0 | 如有问题请参考部署指南</p>
+        </footer>
+    </div>
+
+    <!-- 帮助信息弹窗（简版） -->
+    <div id="helpOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div id="helpContent" style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <!-- 内容由JavaScript动态填充 -->
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置检测 ====================
+        // 重要：请用你的真实Cloudflare Worker URL替换下面的占位符
+        const WORKER_URL = 'https://your-worker.your-username.workers.dev/query';
+        // 示例：'https://volcano-proxy.johnsmith.workers.dev/query'
+        
+        // 检测WORKER_URL是否已配置
+        function isWorkerUrlConfigured() {
+            const defaultUrl = 'https://your-worker.your-username.workers.dev/query';
+            return WORKER_URL && WORKER_URL !== defaultUrl && WORKER_URL.includes('.workers.dev');
+        }
+        
+        // ==================== DOM元素 ====================
+        const configWizard = document.getElementById('configWizard');
+        const queryInterface = document.getElementById('queryInterface');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const questionInput = document.getElementById('question');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const resultSection = document.getElementById('resultSection');
+        const answerContent = document.getElementById('answerContent');
+        const helpOverlay = document.getElementById('helpOverlay');
+        const helpContent = document.getElementById('helpContent');
+        
+        // ==================== 初始化 ====================
+        function initInterface() {
+            const isConfigured = isWorkerUrlConfigured();
+            
+            if (isConfigured) {
+                // 已配置：显示查询界面，隐藏配置向导
+                configWizard.classList.remove('visible');
+                queryInterface.classList.add('visible');
+                statusIndicator.textContent = '已就绪';
+                console.log('✅ Worker URL已配置:', WORKER_URL);
+            } else {
+                // 未配置：显示配置向导，隐藏查询界面
+                configWizard.classList.add('visible');
+                queryInterface.classList.remove('visible');
+                console.log('⚠️ Worker URL未配置，请按向导完成设置');
+            }
+        }
+        
+        // ==================== 查询功能 ====================
+        submitBtn.addEventListener('click', async () => {
+            const question = questionInput.value.trim();
+            
+            // 输入验证
+            if (!question) {
+                alert('请输入问题内容。');
+                return;
+            }
+            
+            if (question.length > 1000) {
+                alert('问题过长，请控制在1000字符以内。');
+                return;
+            }
+            
+            // 禁用按钮，显示加载状态
+            submitBtn.disabled = true;
+            btnText.textContent = '处理中...';
+            spinner.style.display = 'inline-block';
+            
+            // 清除之前的结果
+            resultSection.classList.remove('visible');
+            answerContent.className = 'result-content';
+            answerContent.textContent = '';
+            
+            try {
+                console.log('📤 发送请求到Worker:', WORKER_URL);
+                console.log('📝 问题:', question);
+                
+                // 发送请求到Cloudflare Worker
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    }),
+                    // 设置超时（通过AbortController）
+                    signal: AbortSignal.timeout(30000) // 30秒超时
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Worker请求失败 (${response.status}): ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📥 收到响应:', data);
+                
+                // 显示答案
+                if (data.answer) {
+                    answerContent.textContent = data.answer;
+                    answerContent.className = 'result-content';
+                } else if (data.error) {
+                    answerContent.textContent = `错误: ${data.error}`;
+                    answerContent.className = 'result-content error';
+                } else if (data.content_with_weight) {
+                    // 处理千课API可能返回的格式
+                    answerContent.textContent = data.content_with_weight;
+                    answerContent.className = 'result-content';
+                } else {
+                    answerContent.textContent = '知识库未返回答案，请检查问题格式或知识库内容。';
+                    answerContent.className = 'result-content error';
+                }
+                
+            } catch (error) {
+                console.error('❌ 请求失败:', error);
+                
+                // 根据错误类型显示友好提示
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                    answerContent.textContent = '请求超时，请检查网络连接或Worker是否正常运行。';
+                } else if (error.message.includes('Failed to fetch')) {
+                    answerContent.textContent = '无法连接到Worker，请检查Worker URL是否正确且已部署。';
+                } else {
+                    answerContent.textContent = `获取答案失败: ${error.message}`;
+                }
+                
+                answerContent.className = 'result-content error';
+                
+            } finally {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                btnText.textContent = '提问';
+                spinner.style.display = 'none';
+                
+                // 显示结果区域
+                setTimeout(() => {
+                    resultSection.classList.add('visible');
+                }, 100);
+            }
+        });
+        
+        // ==================== 帮助功能 ====================
+        function showHelp(type) {
+            let title = '';
+            let content = '';
+            
+            switch (type) {
+                case 'cf':
+                    title = 'Cloudflare Worker部署指南';
+                    content = `
+                        <h3>详细步骤：</h3>
+                        <ol>
+                            <li>访问 <a href="https://workers.cloudflare.com" target="_blank">Cloudflare Workers</a> 并注册账号</li>
+                            <li>点击侧边栏 "Workers & Pages" → "Create application" → "Create Worker"</li>
+                            <li>将提供的 <code>volcano_proxy.js</code> 代码粘贴到编辑器中</li>
+                            <li>点击右下角 "Deploy" 按钮部署Worker</li>
+                            <li>部署成功后，在Worker管理页面获取访问URL</li>
+                        </ol>
+                        <p><strong>注意：</strong>Worker URL应包含 <code>/query</code> 路径，例如：
+                        <code>https://your-worker.your-username.workers.dev/query</code></p>
+                    `;
+                    break;
+                    
+                case 'query':
+                    title = '如何使用查询功能';
+                    content = `
+                        <h3>使用说明：</h3>
+                        <ul>
+                            <li><strong>输入问题：</strong>在文本框中输入你想查询的问题，尽量清晰明确</li>
+                            <li><strong>提交查询：</strong>点击"提问"按钮或按Enter键（非Shift+Enter）</li>
+                            <li><strong>查看答案：</strong>答案将显示在下方区域，可能需要几秒钟时间</li>
+                            <li><strong>重新提问：</strong>直接输入新问题并提交即可</li>
+                        </ul>
+                        <p><strong>提示：</strong>如果遇到错误，请检查网络连接和Worker配置。</p>
+                    `;
+                    break;
+                    
+                case 'full':
+                default:
+                    title = '完整部署指南';
+                    content = `
+                        <h3>部署分为两个主要部分：</h3>
+                        <h4>1. Cloudflare Worker配置</h4>
+                        <p>用于保护千课API密钥，作为中间代理转发请求。</p>
+                        
+                        <h4>2. GitHub Pages部署</h4>
+                        <p>用于托管这个HTML页面，提供可访问的网页链接。</p>
+                        
+                        <p><strong>详细步骤请参考：</strong></p>
+                        <p>项目中的 <code>deployment_guide.md</code> 文件，其中包含：</p>
+                        <ul>
+                            <li>每一步的截图指引</li>
+                            <li>常见问题解答</li>
+                            <li>故障排查方法</li>
+                        </ul>
+                        
+                        <p style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                            <strong>快速测试：</strong>
+                            <button onclick="testWorkerConnection()" style="margin-left: 10px; padding: 6px 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                测试Worker连接
+                            </button>
+                        </p>
+                    `;
+                    break;
+            }
+            
+            helpContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; color: #2c3e50;">${title}</h3>
+                    <button onclick="hideHelp()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #718096;">&times;</button>
+                </div>
+                <div style="color: #4a5568; line-height: 1.6;">
+                    ${content}
+                </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button onclick="hideHelp()" style="padding: 8px 16px; background: #718096; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        关闭
+                    </button>
+                </div>
+            `;
+            
+            helpOverlay.style.display = 'flex';
+        }
+        
+        function hideHelp() {
+            helpOverlay.style.display = 'none';
+        }
+        
+        // 点击遮罩层关闭帮助
+        helpOverlay.addEventListener('click', (e) => {
+            if (e.target === helpOverlay) {
+                hideHelp();
+            }
+        });
+        
+        // ==================== 配置向导功能 ====================
+        function showConfigWizard() {
+            configWizard.classList.add('visible');
+            queryInterface.classList.remove('visible');
+        }
+        
+        // ==================== Worker连接测试 ====================
+        async function testWorkerConnection() {
+            if (!isWorkerUrlConfigured()) {
+                alert('请先配置Worker URL（替换WORKER_URL占位符）。');
+                return;
+            }
+            
+            const testBtn = document.querySelector('[onclick="testWorkerConnection()"]');
+            const originalText = testBtn ? testBtn.textContent : '测试中...';
+            
+            if (testBtn) testBtn.textContent = '测试中...';
+            
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: '测试连接' }),
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ Worker连接成功！\n状态码: ${response.status}\n响应包含: ${Object.keys(data).join(', ')}`);
+                } else {
+                    alert(`⚠️ Worker响应异常\n状态码: ${response.status}\n错误: ${data.error || '未知错误'}`);
+                }
+            } catch (error) {
+                alert(`❌ Worker连接失败\n错误: ${error.message}`);
+            } finally {
+                if (testBtn) testBtn.textContent = originalText;
+            }
+        }
+        
+        // ==================== 辅助功能 ====================
+        // Enter键提交（非Shift+Enter）
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitBtn.click();
+            }
+        });
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', initInterface);
+        
+        // 如果页面已加载，直接初始化
+        if (document.readyState !== 'loading') {
+            initInterface();
+        }
+    </script>
+</body>
+</html>
